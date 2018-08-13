@@ -525,6 +525,22 @@ function! fzf#vim#history(...)
 endfunction
 
 " ------------------------------------------------------------------
+" Mix
+" ------------------------------------------------------------------
+function! fzf#vim#mixed(args, ...)
+  let root = s:get_git_root()
+  if empty(root)
+    return fzf#vim#history()
+  endif
+
+  return s:fzf('mixed', {
+  \ 'source':  'bash -c "echo -e \"'.join(s:all_files(), '\n').'\";git ls-files | uniq"',
+  \ 'dir':     root,
+  \ 'options': ['-m', '--header-lines', !empty(expand('%')), '--prompt', 'Mixed> ']
+  \}, a:000)
+endfunction
+
+" ------------------------------------------------------------------
 " GFiles[?]
 " ------------------------------------------------------------------
 
