@@ -455,11 +455,24 @@ endfunction
 " History[:/]
 " ------------------------------------------------------------------
 function! s:all_files()
-  return fzf#vim#_uniq(map(
+  let results = fzf#vim#_uniq(map(
     \ filter([expand('%')], 'len(v:val)')
     \   + filter(map(s:buflisted_sorted(), 'bufname(v:val)'), 'len(v:val)')
     \   + filter(copy(v:oldfiles), "filereadable(fnamemodify(v:val, ':p'))"),
     \ 'fnamemodify(v:val, ":~:.")'))
+  if !empty(get(g:, 'fzf_ignore'))
+    let patterns = get(g:, 'fzf_ignore')
+    let results = filter(results, {k,v -> !s:match_any(v, patterns)})
+  endif
+  return results
+endfunction
+
+function! s:match_any(string, patterns)
+  for pattern in a:patterns
+    if a:string =~ pattern
+      return 1
+    endif
+  endfor
 endfunction
 
 function! s:history_source(type)
