@@ -71,7 +71,7 @@ function! s:history(arg, bang)
   elseif a:arg[0] == '/'
     call fzf#vim#search_history(bang)
   else
-    call fzf#vim#history(bang)
+    call fzf#vim#history(fzf#vim#with_preview(), bang)
   endif
 endfunction
 
