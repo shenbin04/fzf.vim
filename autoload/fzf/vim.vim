@@ -669,23 +669,24 @@ endfunction
 " ------------------------------------------------------------------
 " Ag / Rg
 " ------------------------------------------------------------------
-function! s:ag_to_qf(line, has_column)
+function! s:ag_to_qf(line, has_row_col)
   let parts = split(a:line, ':')
-  let text = join(parts[(a:has_column ? 3 : 2):], ':')
-  let dict = {'filename': &acd ? fnamemodify(parts[0], ':p') : parts[0], 'lnum': parts[1], 'text': text}
-  if a:has_column
+  let text = join(parts[(a:has_row_col ? 3 : 1):], ':')
+  let dict = {'filename': &acd ? fnamemodify(parts[0], ':p') : parts[0], 'text': text}
+  if a:has_row_col
+    let dict.lnum = parts[1]
     let dict.col = parts[2]
   endif
   return dict
 endfunction
 
-function! s:ag_handler(lines, has_column)
+function! s:ag_handler(lines, has_row_col)
   if len(a:lines) < 2
     return
   endif
 
   let cmd = s:action_for(a:lines[0], 'e')
-  let list = map(filter(a:lines[1:], 'len(v:val)'), 's:ag_to_qf(v:val, a:has_column)')
+  let list = map(filter(a:lines[1:], 'len(v:val)'), 's:ag_to_qf(v:val, a:has_row_col)')
   if empty(list)
     return
   endif
@@ -693,8 +694,8 @@ function! s:ag_handler(lines, has_column)
   let first = list[0]
   try
     call s:open(cmd, first.filename)
-    execute first.lnum
-    if a:has_column
+    if a:has_row_col
+      execute first.lnum
       execute 'normal!' first.col.'|'
     endif
     normal! zz
@@ -721,11 +722,12 @@ function! fzf#vim#ag_raw(command_suffix, ...)
   if !executable('ag')
     return s:warn('ag is not found')
   endif
-  return call('fzf#vim#grep', extend(['ag --nogroup --column --color '.a:command_suffix, 1], a:000))
+  let has_row_col = index(split(a:command_suffix), '-g') < 0
+  return call('fzf#vim#grep', extend(['ag --nogroup --column --color '.a:command_suffix, has_row_col], a:000))
 endfunction
 
-" command (string), has_column (0/1), [options (dict)], [fullscreen (0/1)]
-function! fzf#vim#grep(grep_command, has_column, ...)
+" command (string), has_row_col (0/1), [options (dict)], [fullscreen (0/1)]
+function! fzf#vim#grep(grep_command, has_row_col, ...)
   let words = []
   for word in split(a:grep_command)
     if word !~# '^[a-z]'
@@ -737,7 +739,7 @@ function! fzf#vim#grep(grep_command, has_column, ...)
   let name    = join(words, '-')
   let capname = join(map(words, 'toupper(v:val[0]).v:val[1:]'), '')
   let opts = {
-  \ 'column':  a:has_column,
+  \ 'column':  a:has_row_col,
   \ 'options': ['--ansi', '--prompt', capname.'> ',
   \             '--multi', '--bind', 'alt-a:select-all,alt-d:deselect-all',
   \             '--color', 'hl:4,hl+:12']
